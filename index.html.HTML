@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Internet Satelital Mezquital | Panel de Control</title>
+    <style>
+        :root {
+            --primary: #00a8ff; --secondary: #2c3e50;
+            --success: #27ae60; --danger: #e74c3c;
+            --light: #f4f7f6; --dark: #1a1c20;
+        }
+
+        body, html { 
+            margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; 
+            background: #f0f2f5; color: #333; height: 100%;
+        }
+
+        /* --- LOGIN --- */
+        #login-page {
+            display: flex; justify-content: center; align-items: center; height: 100vh;
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), 
+                        url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1920');
+            background-size: cover; background-position: center;
+        }
+        .login-card { 
+            background: white; padding: 40px; width: 320px; border-radius: 15px; 
+            text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
+        }
+        .login-card h2 { color: var(--secondary); margin-bottom: 25px; border-bottom: 2px solid var(--primary); display: inline-block; }
+        .login-card input { 
+            width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; 
+            border: 1px solid #ddd; box-sizing: border-box; font-size: 16px;
+        }
+        .login-card button { 
+            width: 100%; padding: 12px; background: var(--secondary); color: white; 
+            border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px;
+        }
+
+        /* --- PANTALLA BLOQUEO (SaaS) --- */
+        #lock-screen {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.98); z-index: 9999; color: white;
+            flex-direction: column; justify-content: center; align-items: center; text-align: center;
+        }
+        .bank-info { 
+            background: #004481; color: white; padding: 25px; border-radius: 15px; 
+            margin: 20px 0; border-left: 8px solid var(--primary); text-align: left; width: 80%; max-width: 400px;
+        }
+
+        /* --- ESTRUCTURA APP --- */
+        #main-app { display: none; height: 100vh; grid-template-columns: 260px 1fr; }
+        
+        /* Sidebar */
+        .sidebar { background: var(--secondary); color: white; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 30px 20px; text-align: center; background: #1a252f; }
+        .menu-item { 
+            padding: 15px 25px; cursor: pointer; border-left: 4px solid transparent; 
+            transition: 0.3s; display: flex; align-items: center; gap: 10px;
+        }
+        .menu-item:hover, .menu-item.active { background: #34495e; border-left-color: var(--primary); }
+        
+        /* Contenido */
+        .main-content { padding: 30px; overflow-y: auto; background: var(--light); }
+        .panel { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .panel-header { border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px; color: var(--secondary); font-weight: bold; font-size: 20px; }
+
+        /* Botones Maestro */
+        .master-bar { 
+            background: #fff; border: 2px solid var(--primary); padding: 15px; 
+            border-radius: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; color: white; transition: 0.3s; }
+        .btn-green { background: var(--success); }
+        .btn-red { background: var(--danger); }
+        .btn:hover { opacity: 0.8; transform: scale(1.02); }
+
+        /* --- FICHAS / VOUCHERS --- */
+        #printable-grid { 
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 20px; 
+        }
+        .voucher { 
+            border: 1px dashed #333; padding: 12px; text-align: center; 
+            background: white; font-size: 11px; color: black;
+        }
+        .voucher h4 { margin: 0 0 5px 0; color: #004481; font-size: 13px; }
+        .voucher .code { 
+            font-size: 18px; font-weight: bold; background: #f0f0f0; 
+            display: block; margin: 8px 0; border: 1px solid #ccc; padding: 4px;
+        }
+
+        /* --- IMPRESIÓN --- */
+        @media print {
+            .no-print { display: none !important; }
+            #main-app { display: block; }
+            .main-content { padding: 0; background: white; }
+            #printable-grid { grid-template-columns: repeat(4, 1fr); gap: 5px; }
+            .voucher { border: 1px solid #000; page-break-inside: avoid; }
+        }
+
+        .hidden { display: none !important; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 12px; margin-bottom: 5px; color: #666; }
+        input[type="text"], input[type="password"], select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+
+    <div id="login-page">
+        <div class="login-card">
+            <h2>MIKHMON V3</h2>
+            <input type="text" id="user-field" placeholder="Usuario (ej. admin)">
+            <input type="password" id="pass-field" placeholder="Contraseña">
+            <button onclick="login()">ENTRAR</button>
+            <p style="font-size:10px; color:#888; margin-top:20px;">Internet Satelital Mezquital</p>
+        </div>
+    </div>
+
+    <div id="lock-screen">
+        <h1 style="color:var(--danger); font-size: 40px;">SISTEMA BLOQUEADO</h1>
+        <p>Tu mensualidad ha vencido. Realiza el pago para continuar.</p>
+        <div class="bank-info">
+            <small>DEPÓSITO BBVA MÉXICO:</small><br>
+            <b style="font-size:18px;">YUNIOR CARRILLO AGUILAR</b><br>
+            <span style="font-size:22px; font-weight:bold; letter-spacing:1px;">4152 3145 5952 0948</span>
+        </div>
+        <button onclick="window.open('https://wa.me/521234567890')" style="background:var(--success); color:white; border:none; padding:15px 30px; border-radius:10px; font-weight:bold; cursor:pointer;">ENVIAR COMPROBANTE</button>
+        <button onclick="location.reload()" style="background:none; border:none; color:#555; margin-top:30px; cursor:pointer; text-decoration:underline;">Volver al Login</button>
+    </div>
+
+    <div id="main-app">
+        <div class="sidebar no-print">
+            <div class="sidebar-header">
+                <h3 style="margin:0">MEZQUITAL</h3>
+                <small style="color:var(--primary)">Satelital Pro</small>
+            </div>
+            <div class="menu-item active" onclick="showTab('vouchers')">🎟️ Generar Fichas</div>
+            <div class="menu-item" onclick="showTab('mikrotik')">⚙️ Config. MikroTik</div>
+            <div class="menu-item" onclick="showTab('licencia')">💳 Mi Suscripción</div>
+            <div class="menu-item" style="margin-top:auto; color:var(--danger)" onclick="location.reload()">🚪 Cerrar Sesión</div>
+        </div>
+
+        <div class="main-content">
+            <div id="master-panel" class="master-bar no-print hidden">
+                <div>
+                    <b style="color:var(--primary)">MODO MAESTRO: YUNIOR</b><br>
+                    <small>Control de acceso del cliente: <span id="status-tag" style="font-weight:bold">ACTIVO</span></small>
+                </div>
+                <div>
+                    <button class="btn btn-green" onclick="controlCliente('ACTIVO')">DESBLOQUEAR CLIENTE</button>
+                    <button class="btn btn-red" onclick="controlCliente('BLOQUEADO')">BLOQUEAR CLIENTE</button>
+                </div>
+            </div>
+
+            <div id="tab-vouchers">
+                <div class="panel no-print">
+                    <div class="panel-header">Impresión Masiva (36 Fichas por Hoja)</div>
+                    <div style="display:flex; gap:15px; align-items:flex-end; flex-wrap:wrap;">
+                        <div style="flex:1; min-width:200px;">
+                            <label style="font-size:12px; color:#666;">PLAN DE INTERNET:</label>
+                            <select id="plan-select">
+                                <option value="1 HORA - $10.00">1 HORA - $10.00 MXN</option>
+                                <option value="1 DÍA - $30.00">1 DÍA - $30.00 MXN</option>
+                                <option value="1 SEMANA - $150.00">1 SEMANA - $150.00 MXN</option>
+                            </select>
+                        </div>
+                        <button onclick="generarPlanilla()" class="btn btn-green" style="background:var(--primary)">GENERAR 36 FICHAS</button>
+                        <button onclick="window.print()" class="btn btn-green">🖨️ IMPRIMIR HOJA</button>
+                    </div>
+                </div>
+                <div id="printable-grid"></div>
+            </div>
+
+            <div id="tab-mikrotik" class="hidden">
+                <div class="panel">
+                    <div class="panel-header">Ajustes de Sesión MikroTik</div>
+                    <div class="form-group"><label>IP MikroTik (ej. 192.168.88.1)</label><input type="text" value="192.168.88.1"></div>
+                    <div class="form-group"><label>Usuario API</label><input type="text" value="admin"></div>
+                    <div class="form-group"><label>Contraseña API</label><input type="password" value=""></div>
+                    <div class="form-group"><label>Hotspot Name</label><input type="text" value="hotspot1"></div>
+                    <button class="btn btn-green" style="background:var(--secondary)" onclick="alert('Configuración guardada localmente')">GUARDAR CAMBIOS</button>
+                </div>
+            </div>
+
+            <div id="tab-licencia" class="hidden">
+                <div class="panel">
+                    <div class="panel-header">Información de Licencia SaaS</div>
+                    <p>Propietario del Sistema: <b>Yunior Carrillo Aguilar</b></p>
+                    <p>Estado del Servicio: <span style="color:var(--success); font-weight:bold;">ACTIVO</span></p>
+                    <div class="bank-info">
+                        <b>DATOS PARA PAGO BBVA:</b><br>
+                        Titular: Yunior Carrillo Aguilar<br>
+                        Cuenta: 4152 3145 5952 0948
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- LOGICA DE CONTROL ---
+        // Inicializamos el estado si no existe
+        if (!localStorage.getItem('mezquital_status')) {
+            localStorage.setItem('mezquital_status', 'ACTIVO');
+        }
+
+        function login() {
+            const user = document.getElementById('user-field').value;
+            const pass = document.getElementById('pass-field').value;
+
+            // 1. ACCESO MAESTRO (YUNIOR) - NUNCA SE BLOQUEA
+            if (user === "yunior" && pass === "master7074") {
+                document.getElementById('master-panel').classList.remove('hidden');
+                abrirApp("ADMIN MAESTRO");
+            } 
+            // 2. ACCESO CLIENTE (ADMIN) - SE BLOQUEA SI YUNIOR QUIERE
+            else if (user === "admin" && pass === "1234") {
+                if (localStorage.getItem('mezquital_status') === 'BLOQUEADO') {
+                    document.getElementById('login-page').style.display = 'none';
+                    document.getElementById('lock-screen').style.display = 'flex';
+                } else {
+                    abrirApp("CLIENTE");
+                }
+            } else {
+                alert("Usuario o Contraseña incorrectos");
+            }
+        }
+
+        function abrirApp(perfil) {
+            document.getElementById('login-page').style.display = 'none';
+            document.getElementById('main-app').style.display = 'grid';
+            document.getElementById('status-tag').innerText = localStorage.getItem('mezquital_status');
+            generarPlanilla();
+        }
+
+        function controlCliente(estado) {
+            localStorage.setItem('mezquital_status', estado);
+            document.getElementById('status-tag').innerText = estado;
+            document.getElementById('status-tag').style.color = (estado === 'ACTIVO') ? 'green' : 'red';
+            alert("El acceso para el cliente ahora está: " + estado);
+        }
+
+        function showTab(tabId) {
+            document.getElementById('tab-vouchers').classList.add('hidden');
+            document.getElementById('tab-mikrotik').classList.add('hidden');
+            document.getElementById('tab-licencia').classList.add('hidden');
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+            
+            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+        }
+
+        function generarPlanilla() {
+            const plan = document.getElementById('plan-select').value;
+            const grid = document.getElementById('printable-grid');
+            grid.innerHTML = "";
+            
+            for (let i = 0; i < 36; i++) {
+                // Código aleatorio de 6 dígitos
+                const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+                grid.innerHTML += `
+                    <div class="voucher">
+                        <h4>INTERNET MEZQUITAL</h4>
+                        <small>Voucher Satelital</small>
+                        <span class="code">${code}</span>
+                        <b>PLAN: ${plan}</b><br>
+                        <div style="font-size:8px; margin-top:5px;">Soporte: Yunior Carrillo</div>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
